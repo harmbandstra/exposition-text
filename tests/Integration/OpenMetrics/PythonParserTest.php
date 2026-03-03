@@ -4,10 +4,12 @@ namespace OpenMetricsPhp\Exposition\Text\Tests\Integration\OpenMetrics;
 
 use OpenMetricsPhp\Exposition\Text\Collections\CounterCollection;
 use OpenMetricsPhp\Exposition\Text\Collections\GaugeCollection;
+use OpenMetricsPhp\Exposition\Text\Collections\InfoCollection;
 use OpenMetricsPhp\Exposition\Text\Exceptions\InvalidArgumentException;
 use OpenMetricsPhp\Exposition\Text\Interfaces\ProvidesMetricLines;
 use OpenMetricsPhp\Exposition\Text\Metrics\Counter;
 use OpenMetricsPhp\Exposition\Text\Metrics\Gauge;
+use OpenMetricsPhp\Exposition\Text\Metrics\Info;
 use OpenMetricsPhp\Exposition\Text\Metrics\Histogram;
 use OpenMetricsPhp\Exposition\Text\Metrics\Summary;
 use OpenMetricsPhp\Exposition\Text\Types\Label;
@@ -145,5 +147,29 @@ final class PythonParserTest extends TestCase
 		$histogram = Histogram::fromGaugeCollectionWithBounds( $gauges, [0.13, 31, 46, 78.9, 90], '_histogram' );
 
 		$this->assertParsedMetricOutput( $expectedParserOutput, $histogram );
+	}
+
+	/**
+	 * @throws InvalidArgumentException
+	 * @throws ExpectationFailedException
+	 * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+	 */
+	public function testCanParseInfoMetricsWithPythonParser() : void
+	{
+		$expectedParserOutput = "Name: app_info Labels: {'version': '8.2.7', 'name': 'pretty name'} Value: 1 Timestamp: None\n"
+		                        . "Name: app_info Labels: {'env': 'production'} Value: 1 Timestamp: None\n";
+
+		$collection = InfoCollection::fromInfos(
+			MetricName::fromString( 'app' ),
+			Info::new()->withLabels(
+				Label::fromNameAndValue( 'version', '8.2.7' ),
+				Label::fromNameAndValue( 'name', 'pretty name' )
+			),
+			Info::new()->withLabels(
+				Label::fromNameAndValue( 'env', 'production' )
+			)
+		);
+
+		$this->assertParsedMetricOutput( $expectedParserOutput, $collection );
 	}
 }

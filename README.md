@@ -10,6 +10,7 @@ This implementation supports the following metric types:
 
 * Counter
 * Gauge
+* Info
 * Histogram (calculated from a collection of gauges)
 * Summary (calculated from a collection of gauges)
 
@@ -167,6 +168,65 @@ your_metric_name 3.450000
 your_metric_name 67.800000 1541323799
 your_metric_name{label3="label_value"} 90.100000
 your_metric_name{label4="label_value",label5="label_value"} 23.400000 1541323799
+```
+
+### Create a collection of info metrics and respond it
+
+See [examples/info.php](./examples/info.php).
+
+```php
+<?php declare(strict_types=1);
+
+namespace YourVendor\YourProject;
+
+use OpenMetricsPhp\Exposition\Text\Collections\InfoCollection;
+use OpenMetricsPhp\Exposition\Text\Collections\LabelCollection;
+use OpenMetricsPhp\Exposition\Text\Types\MetricName;
+use OpenMetricsPhp\Exposition\Text\Types\Label;
+use OpenMetricsPhp\Exposition\Text\Metrics\Info;
+
+$infos = InfoCollection::fromInfos(
+	MetricName::fromString('your_app'),
+	Info::new()->withLabels(
+		Label::fromNameAndValue('version', '8.2.7'),
+		Label::fromNameAndValue('name', 'pretty name')
+	)
+)->withHelp('Information about the application.');
+
+# Add infos after creating the collection
+$infos->add(
+	Info::new()->withLabels(
+		Label::fromNameAndValue('env', 'production')
+	),
+	Info::new()->withLabels(
+		Label::fromLabelString('build_revision="abc123"')
+	)
+);
+
+# Prepare labels upfront
+$labels = LabelCollection::fromAssocArray(
+	[
+		'compiler' => 'gcc',
+		'compiler_version' => '12.2.0',
+	]
+);
+
+$infos->add(
+	Info::new()->withLabelCollection($labels)
+);
+
+echo $infos->getMetricsString();
+```
+
+#### Prints
+
+```
+# TYPE your_app info
+# HELP your_app Information about the application.
+your_app_info{version="8.2.7",name="pretty name"} 1
+your_app_info{env="production"} 1
+your_app_info{build_revision="abc123"} 1
+your_app_info{compiler="gcc",compiler_version="12.2.0"} 1
 ```
 
 ### Create a histogram out of a gauge collection and respond it
